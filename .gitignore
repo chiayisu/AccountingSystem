@@ -1,0 +1,13 @@
+*.exe
+*.pdb
+*.cache
+*.csproj.FileListAbsolute.txt
+*.csproj.GenerateResource.Cache                
+App.config
+obj/
+bin/
+Form1.resx
+account.resx
+Properties/
+SearchByMonth.resx
+SearchByYear.resx
