@@ -17,9 +17,8 @@ namespace 記帳SQLServer
         {
             InitializeComponent();
         }
-
-        CAccount Account = new CAccount();
         string sSQL;
+        CAccount Account;
         SqlConnection oConn;
         CDate date = new CDate();
         private void account_Load(object sender, EventArgs e)
@@ -35,85 +34,50 @@ namespace 記帳SQLServer
         private void InsertionBN_Click(object sender, EventArgs e)
         {
             string InputMode = InsertionBN.Text;
-            Account.Year = YearTextBox.Text;
-            Account.Month = MonthtextBox.Text;
-            Account.Day = DayTextBox.Text;
-            Account.Item = ItemComboBox.Text;
-            Account.Dollar = int.Parse(DollarTextBox.Text);
-            Account.InputDataType = DecideInputType();
-
+            Account = new CAccount();
+            Account = InitAccount(Account);
             if (ConfirmInfo(InputMode, Account) != DialogResult.OK)
                 return;
-
             if (Function.IsNull(DollarTextBox.Text))
             {
                 MessageBox.Show(CMessage.NULL, "注意");
                 return;
             }
-
-            sSQL = "SELECT TOP 1 年份, 月份, 日期, 項目, 金額, 收入或支出 FROM ACCOUNT WHERE 年份=N'" + Account.Year +
-                   "'" + " AND " + "月份=N'" + Account.Month + "'" +"AND 日期 = N'" + Account.Day + "'" + 
-                   "AND 項目=N'" + Account.Item + "'" + "AND 金額='" + Account.Dollar + "'AND 收入或支出=N'" +
-                   Account.InputDataType + "'";
-            oConn = Function.Conn(ConnectionString.AccountDB);
-            int IsData = Function.IsDataExist(sSQL, oConn);
-            if (IsData == ReturnCode.DataExist)
-            {
-                MessageBox.Show(CMessage.DataExist, "注意");
-                return;
-            }
-            else if (IsData == ReturnCode.SQLException)
-            {
-                MessageBox.Show(CMessage.SystemError, "注意");
-                return;
-            }
-            sSQL = "INSERT INTO ACCOUNT (年份, 月份, 日期, 項目, 金額, 收入或支出) VALUES(N'" + Account.Year +
-                   "', N'" + Account.Month + "', N'" + Account.Day +"', N'" + Account.Item + 
-                   "', '" + Account.Dollar + "', N'" + Account.InputDataType + "')";
-            MessageBox.Show(getMessage(Function.DBIDU(sSQL, oConn)), "注意");
+            int IsExist = performIsExist(ConnectionString.AccountDB, Account);
+            if (IsExist == ReturnCode.DataNotExist)
+                MessageBox.Show(InsertAccount(ConnectionString.AccountDB, Account), "注意");
+            else
+                MessageBox.Show(getMessage(IsExist), "注意");
         }
 
         private void DeleteBN_Click(object sender, EventArgs e)
         {
             string InputMode = DeleteBN.Text;
-            Account.Year = YearTextBox.Text;
-            Account.Month = MonthtextBox.Text;
-            Account.Day = DayTextBox.Text;
-            Account.Item = ItemComboBox.Text;
-            Account.Dollar = int.Parse(DollarTextBox.Text);
-            Account.InputDataType = DecideInputType();
-
+            Account = new CAccount();
+            Account = InitAccount(Account);
             if (ConfirmInfo(InputMode, Account) != DialogResult.OK)
                 return;
-
             if (Function.IsNull(DollarTextBox.Text))
             {
                 MessageBox.Show(CMessage.NULL, "注意");
                 return;
             }
+            int IsExist = performIsExist(ConnectionString.AccountDB, Account);
+            if (IsExist == ReturnCode.DataExist)
+                MessageBox.Show(deleteAccount(ConnectionString.AccountDB, Account), "注意");
+            else
+                MessageBox.Show(getMessage(IsExist), "注意");
+        }
 
-            sSQL = "SELECT TOP 1 年份, 月份, 日期, 項目, 金額, 收入或支出 FROM ACCOUNT WHERE 年份=N'" + 
-                   Account.Year + "'" + " AND " + "月份=N'" + Account.Month + "'" + "AND 日期 = N'" + 
-                   Account.Day + "'" + "AND 項目=N'" + Account.Item + "'" + "AND 金額='" + Account.Dollar + 
-                   "'AND 收入或支出=N'" + Account.InputDataType + "'";
-            oConn = Function.Conn(ConnectionString.AccountDB);
-            int IsData = Function.IsDataExist(sSQL, oConn);
-            if (IsData == ReturnCode.DataNotExist)
-            {
-                MessageBox.Show(CMessage.DataNotExist, "注意");
-                return;
-            }
-            else if (IsData == ReturnCode.SQLException)
-            {
-                MessageBox.Show(CMessage.SystemError, "注意");
-                return;
-            }
-
-            sSQL = "DELETE ACCOUNT WHERE 年份=N'" + Account.Year + "'" + " AND " + "月份=N'" + Account.Month + "'" +
-                   "AND 日期 = N'" + Account.Day + "'" + "AND 項目=N'" + Account.Item + "'" + "AND 金額='" + 
-                   Account.Dollar + "'AND 收入或支出=N'" + Account.InputDataType + "'";
-            MessageBox.Show(getMessage(Function.DBIDU(sSQL, oConn)), "注意");
-
+        CAccount InitAccount(CAccount account)
+        {
+            account.Year = YearTextBox.Text;
+            account.Month = MonthtextBox.Text;
+            account.Day = DayTextBox.Text;
+            account.Item = ItemComboBox.Text;
+            account.Dollar = int.Parse(DollarTextBox.Text);
+            account.InputDataType = DecideInputType();
+            return account;
         }
 
         string DecideInputType()
@@ -137,16 +101,45 @@ namespace 記帳SQLServer
             return result;
         }
 
+        int performIsExist(string DB_Name, CAccount account)
+        {
+            sSQL = "SELECT TOP 1 年份, 月份, 日期, 項目, 金額, 收入或支出 FROM ACCOUNT WHERE 年份=N'" +
+              account.Year + "'" + " AND " + "月份=N'" + account.Month + "'" + "AND 日期 = N'" +
+              account.Day + "'" + "AND 項目=N'" + account.Item + "'" + "AND 金額='" + account.Dollar +
+              "'AND 收入或支出=N'" + account.InputDataType + "'";
+            oConn = Function.Conn(DB_Name);
+            int IsData = Function.IsDataExist(sSQL, oConn);
+            return IsData;
+        }
+
+        string InsertAccount(string DB_Name, CAccount account)
+        {
+            oConn = Function.Conn(DB_Name);
+            sSQL = "INSERT INTO ACCOUNT (年份, 月份, 日期, 項目, 金額, 收入或支出) VALUES(N'" + account.Year +
+                   "', N'" + account.Month + "', N'" + account.Day + "', N'" + account.Item +
+                   "', '" + account.Dollar + "', N'" + account.InputDataType + "')";
+            return getMessage(Function.DBIDU(sSQL, oConn));
+        }
+
+        string deleteAccount(string DB_Name, CAccount account)
+        {
+            oConn = Function.Conn(DB_Name);
+            sSQL = "DELETE ACCOUNT WHERE 年份=N'" + account.Year + "'" + " AND " + "月份=N'" + account.Month + "'" +
+               "AND 日期 = N'" + account.Day + "'" + "AND 項目=N'" + account.Item + "'" + "AND 金額='" +
+               account.Dollar + "'AND 收入或支出=N'" + account.InputDataType + "'";
+            return getMessage(Function.DBIDU(sSQL, oConn));
+        }
+
         string getMessage(int code)
         {
             if (code == ReturnCode.NotValidData)
-            {
                 return CMessage.NotValidData;
-            }
             else if (code == ReturnCode.Success)
-            {
                 return CMessage.Sussess;
-            }
+            else if (code == ReturnCode.DataExist)
+                return CMessage.DataExist;
+            else if (code == ReturnCode.DataNotExist)
+                return CMessage.DataNotExist;
             else
                 return CMessage.SystemError;
         }
